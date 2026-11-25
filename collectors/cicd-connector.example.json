@@ -1,0 +1,13 @@
+{
+  "schema_version": "pathguard.cicd-connector.v1",
+  "connection_id": "github-wallet-prod",
+  "provider": "github_actions",
+  "repository": "your-org/your-repo",
+  "service": "wallet-api",
+  "environment": "production",
+  "workflow_names": ["Deploy production"],
+  "deploy_job_names": ["deploy-prod"],
+  "backend_url": "https://pathguard.example.com",
+  "credential_file": "/state/connector.token",
+  "state_file": "/state/sync-state.json"
+}
