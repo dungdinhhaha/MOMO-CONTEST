@@ -1,0 +1,38 @@
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+
+spring:
+  application:
+    name: pathguard-backend
+  datasource:
+    url: ${PATHGUARD_DATABASE_URL:jdbc:postgresql://localhost:5432/pathguard}
+    username: ${PATHGUARD_DATABASE_USER:pathguard}
+    password: ${PATHGUARD_DATABASE_PASSWORD:pathguard-local-only}
+    hikari:
+      maximum-pool-size: 12
+      connection-timeout: 5000
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+
+pathguard:
+  security:
+    jwt-issuer-uri: ${PATHGUARD_JWT_ISSUER_URI:}
+    jwt-jwk-set-uri: ${PATHGUARD_JWT_JWK_SET_URI:}
+  aws:
+    external-id-hmac-secret: ${PATHGUARD_AWS_EXTERNAL_ID_HMAC_SECRET:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

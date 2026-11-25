@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pathguard
+      POSTGRES_USER: pathguard
+      POSTGRES_PASSWORD: ${PATHGUARD_DATABASE_PASSWORD:-pathguard-local-only}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pathguard-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pathguard -d pathguard"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      PATHGUARD_DATABASE_URL: jdbc:postgresql://postgres:5432/pathguard
+      PATHGUARD_DATABASE_USER: pathguard
+      PATHGUARD_DATABASE_PASSWORD: ${PATHGUARD_DATABASE_PASSWORD:-pathguard-local-only}
+      PATHGUARD_JWT_ISSUER_URI: ${PATHGUARD_JWT_ISSUER_URI:-http://keycloak:8080/realms/pathguard}
+      PATHGUARD_AWS_EXTERNAL_ID_HMAC_SECRET: ${PATHGUARD_AWS_EXTERNAL_ID_HMAC_SECRET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm", "--health-enabled=true", "--hostname-strict=false"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${PATHGUARD_DEV_OIDC_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${PATHGUARD_DEV_OIDC_ADMIN_PASSWORD:-pathguard-local-only}
+      KC_HOSTNAME: http://keycloak:8080
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./dev/keycloak/pathguard-realm.json:/opt/keycloak/data/import/pathguard-realm.json:ro
+    ports:
+      - "127.0.0.1:8081:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/9000'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+volumes:
+  pathguard-postgres:
